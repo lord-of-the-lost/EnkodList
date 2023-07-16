@@ -12,9 +12,7 @@ final class ListViewController: UIViewController {
     // MARK: - Private properties
     
     private var currentPage: Int = 1
-    private let networkServise: NetworkServiceProtocol
-    private var allItems: [Item] = []
-    private var filteredItems: [Item] = []
+    private var viewModel: ListViewModelProtocol
     
     // MARK: - UI components
     
@@ -64,7 +62,7 @@ final class ListViewController: UIViewController {
     // MARK: - Lifecycle
     
     init() {
-        self.networkServise = NetworkService()
+        self.viewModel = ListViewModel()
         super.init(nibName: nil, bundle: nil)
     }
     
@@ -77,7 +75,8 @@ final class ListViewController: UIViewController {
         setupView()
         setupPageLabelGesture()
         setupConstraints()
-        fetchData()
+        bindViewModel()
+        viewModel.fetchData()
     }
     
     // MARK: - Setup View
@@ -118,36 +117,15 @@ final class ListViewController: UIViewController {
         currentPageLabel.addGestureRecognizer(tapGesture)
     }
     
-    // MARK: - Networking
+    // MARK: - ViewModel Binding
     
-    private func fetchData(completion: (() -> Void)? = nil) {
-        networkServise.fetchData { [weak self] result in
-            switch result {
-            case .success(let data):
-                do {
-                    let decoder = JSONDecoder()
-                    let results = try decoder.decode(AllResults.self, from: data)
-                    
-                    guard let fetchedItems = results.result else {
-                        print("Ошибка: не удалось получить данные")
-                        return
-                    }
-                    
-                    self?.allItems = fetchedItems
-                    self?.filteredItems = fetchedItems
-                    DispatchQueue.main.async {
-                        self?.tableView.reloadData()
-                        completion?()
-                    }
-                } catch {
-                    print("Ошибка при декодировании данных: \(error)")
-                }
-            case .failure(let error):
-                print("Ошибка при выполнении сетевого запроса: \(error)")
+    private func bindViewModel() {
+        viewModel.onUpdate = { [weak self] in
+            DispatchQueue.main.async {
+                self?.tableView.reloadData()
             }
         }
     }
-    
     
     // MARK: - Actions
     
@@ -199,16 +177,15 @@ final class ListViewController: UIViewController {
 
 extension ListViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return filteredItems.count
+        return viewModel.numberOfItems
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         guard let cell = tableView.dequeueReusableCell(withIdentifier: "Cell") else { return UITableViewCell() }
-        let item = filteredItems[indexPath.row]
-        
-        let cleanEmail = item.email?.replacingOccurrences(of: "devnull+", with: "")
-        cell.textLabel?.text = cleanEmail
-        
+        if let item = viewModel.item(at: indexPath.row) {
+            let cleanEmail = item.email?.replacingOccurrences(of: "devnull+", with: "")
+            cell.textLabel?.text = cleanEmail
+        }
         return cell
     }
 }
@@ -220,20 +197,13 @@ extension ListViewController: UITableViewDelegate {
 extension ListViewController: UISearchBarDelegate {
     func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
         guard let searchText = searchBar.text?.lowercased() else { return }
-        
-        if searchText.isEmpty {
-            self.filteredItems = allItems
-        } else {
-            let filteredItems = allItems.filter { ($0.email?.lowercased() ?? "").localizedCaseInsensitiveContains(searchText) }
-            self.filteredItems = filteredItems
-        }
-        
-        tableView.reloadData()
+        viewModel.filterItems(with: searchText)
     }
     
     func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
         searchBar.text = nil
-        filteredItems = allItems
+        viewModel.filterItems(with: "")
         searchBar.resignFirstResponder() //fix
     }
 }
+
