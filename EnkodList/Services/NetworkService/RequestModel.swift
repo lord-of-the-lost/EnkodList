@@ -7,6 +7,8 @@
 
 import Foundation
 
+// MARK: - RequestModel
+
 struct AllResults: Codable {
     let total: Int?
     let result: [Item]?
@@ -18,4 +20,21 @@ struct Item: Codable {
     let firstName: String?
     let lastName: String?
     let dateUpdate: Int?
+    
+    // MARK: - Computed Properties
+    
+    var cleanEmail: String? {
+          return email?.replacingOccurrences(of: "devnull+", with: "")
+      }
+    
+    var formattedDateUpdate: String? {
+          guard let timestamp = dateUpdate else { return nil }
+          let date = Date(timeIntervalSince1970: TimeInterval(timestamp))
+          let dateFormatter = DateFormatter()
+          dateFormatter.dateStyle = .medium
+          dateFormatter.timeStyle = .medium
+          dateFormatter.timeZone = TimeZone.current
+          
+          return dateFormatter.string(from: date)
+      }
 }

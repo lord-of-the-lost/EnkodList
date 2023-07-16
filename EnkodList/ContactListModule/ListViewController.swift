@@ -30,7 +30,7 @@ final class ListViewController: UIViewController {
         tableView.layer.cornerRadius = 15
         tableView.delegate = self
         tableView.dataSource = self
-        tableView.register(UITableViewCell.self, forCellReuseIdentifier: "Cell")
+        tableView.register(ListTableViewCell.self, forCellReuseIdentifier: "ListTableViewCell")
         tableView.translatesAutoresizingMaskIntoConstraints = false
         return tableView
     }()
@@ -181,10 +181,11 @@ extension ListViewController: UITableViewDataSource {
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        guard let cell = tableView.dequeueReusableCell(withIdentifier: "Cell") else { return UITableViewCell() }
+        guard let cell = tableView.dequeueReusableCell(withIdentifier: "ListTableViewCell", for: indexPath) as? ListTableViewCell else {
+            return UITableViewCell() }
+        
         if let item = viewModel.item(at: indexPath.row) {
-            let cleanEmail = item.email?.replacingOccurrences(of: "devnull+", with: "")
-            cell.textLabel?.text = cleanEmail
+            cell.configure(with: item)
         }
         return cell
     }
