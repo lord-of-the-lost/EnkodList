@@ -11,10 +11,11 @@ final class ListViewController: UIViewController {
     
     // MARK: - Private properties
     
-    private var currentPage: Int = 0
     private var maxPages: Int = 0
-    private var viewModel: ListViewModelProtocol
+    private var currentPage: Int = 0
     private var lastContentOffset: CGFloat = 0
+    private var viewModel: ListViewModelProtocol
+   
     
     // MARK: - UI components
     
@@ -97,23 +98,6 @@ final class ListViewController: UIViewController {
         updateCurrentPageButtonTitle()
     }
 
-    private func setupConstraints() {
-        NSLayoutConstraint.activate([
-            searchBar.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
-            searchBar.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-            searchBar.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-
-            tableView.topAnchor.constraint(equalTo: searchBar.bottomAnchor, constant: 10),
-            tableView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 20),
-            tableView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -20),
-            tableView.bottomAnchor.constraint(equalTo: buttonStackView.topAnchor, constant: -20),
-
-            buttonStackView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 20),
-            buttonStackView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -20),
-            buttonStackView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20)
-        ])
-    }
-
     // MARK: - ViewModel Binding
     
     private func bindViewModel() {
@@ -134,7 +118,7 @@ final class ListViewController: UIViewController {
         if currentPage > 0 {
             currentPage -= 1
             updateCurrentPageButtonTitle()
-            tableView.reloadData()
+            updateTableView()
         }
     }
     
@@ -142,7 +126,7 @@ final class ListViewController: UIViewController {
         if currentPage < viewModel.pages.count - 1 {
             currentPage += 1
             updateCurrentPageButtonTitle()
-            tableView.reloadData()
+            updateTableView()
         }
     }
     
@@ -159,12 +143,9 @@ final class ListViewController: UIViewController {
             if let textField = alertController.textFields?.first, let text = textField.text, let newPage = Int(text), newPage > 0, newPage <= self.viewModel.pages.count {
                 self.currentPage = newPage - 1
                 self.updateCurrentPageButtonTitle()
-                self.tableView.reloadData()
+                updateTableView()
             } else {
-                let errorAlertController = UIAlertController(title: "Error", message: "Invalid page value", preferredStyle: .alert)
-                let okAction = UIAlertAction(title: "OK", style: .default, handler: nil)
-                errorAlertController.addAction(okAction)
-                self.present(errorAlertController, animated: true, completion: nil)
+                showInvalidPageAlert()
             }
         }
         
@@ -185,6 +166,13 @@ final class ListViewController: UIViewController {
         let title = "\(currentPage + 1)/\(maxPages) page"
         currentPageButton.setTitle(title, for: .normal)
     }
+    
+    private func updateTableView() {
+           DispatchQueue.main.async {
+               self.tableView.reloadData()
+               self.tableView.scrollToTop(animated: true)
+           }
+       }
 }
 
 // MARK: - Extensions
@@ -220,29 +208,33 @@ extension ListViewController: UITableViewDelegate {
             if currentPage > 0 {
                 currentPage -= 1
                 updateCurrentPageButtonTitle()
-                tableView.reloadData()
+                updateTableView()
             }
         } else if scrollOffset > lastContentOffset && scrollOffset > contentHeight - scrollViewHeight + 10 {
             // Scrolled down
             if currentPage < viewModel.pages.count - 1 {
                 currentPage += 1
                 updateCurrentPageButtonTitle()
-                let indexPath = IndexPath(row: 0, section: 0)
-                tableView.scrollToRow(at: indexPath, at: .top, animated: true)
-                tableView.reloadData()
+                updateTableView()
             }
         }
+        
         lastContentOffset = scrollOffset
     }
 }
+
 
 extension ListViewController: UISearchBarDelegate {
     func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
         guard let searchText = searchBar.text?.lowercased() else { return }
         viewModel.filterItems(with: searchText)
         currentPage = 0
-        currentPageButton.setTitle("\(currentPage + 1) page", for: .normal)
+        updateCurrentPageButtonTitle()
         view.endEditing(true)
+        
+        if viewModel.numberOfItems == 0 {
+            showNoMatchesAlert()
+        }
     }
     
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
@@ -251,5 +243,46 @@ extension ListViewController: UISearchBarDelegate {
             searchBar.resignFirstResponder()
             self.view.becomeFirstResponder()
         }
+    }
+}
+
+private extension ListViewController {
+    
+    // MARK: - Error Handling
+    
+     func showNoMatchesAlert() {
+        let alertController = UIAlertController(title: "No Matches", message: "No items found matching your search", preferredStyle: .alert)
+        let okAction = UIAlertAction(title: "OK", style: .default) { [weak self] _ in
+            guard let self = self else { return }
+            self.tableView.scrollToTop(animated: true)
+        }
+        alertController.addAction(okAction)
+        present(alertController, animated: true, completion: nil)
+    }
+    
+    func showInvalidPageAlert() {
+        let alertController = UIAlertController(title: "Error", message: "Invalid page value", preferredStyle: .alert)
+        let okAction = UIAlertAction(title: "OK", style: .default, handler: nil)
+        alertController.addAction(okAction)
+        present(alertController, animated: true, completion: nil)
+    }
+    
+    // MARK: - Constraints
+    
+    func setupConstraints() {
+        NSLayoutConstraint.activate([
+            searchBar.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
+            searchBar.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+            searchBar.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+
+            tableView.topAnchor.constraint(equalTo: searchBar.bottomAnchor, constant: 10),
+            tableView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 20),
+            tableView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -20),
+            tableView.bottomAnchor.constraint(equalTo: buttonStackView.topAnchor, constant: -20),
+
+            buttonStackView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 20),
+            buttonStackView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -20),
+            buttonStackView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20)
+        ])
     }
 }

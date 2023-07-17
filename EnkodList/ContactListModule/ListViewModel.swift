@@ -22,6 +22,17 @@ protocol ListViewModelProtocol {
 // MARK: - ListViewModel
 
 final class ListViewModel: ListViewModelProtocol {
+    
+    // MARK: - Properties
+    
+    var pages: [[Item]] = []
+    var onUpdate: (() -> Void)?
+    var numberOfItems: Int {
+        return filteredItems.count
+    }
+    
+    // MARK: - Private Properties
+    
     private let networkService: NetworkServiceProtocol
     private var allItems: [Item] = []
     private var filteredItems: [Item] = [] {
@@ -47,17 +58,13 @@ final class ListViewModel: ListViewModelProtocol {
         }
     }
     
-    var pages: [[Item]] = []
-    
-    var onUpdate: (() -> Void)?
-    
-    var numberOfItems: Int {
-        return filteredItems.count
-    }
+    // MARK: - Initialization
     
     init() {
         self.networkService = NetworkService()
     }
+    
+    // MARK: - Public Methods
     
     func fetchData() {
         networkService.fetchData { [weak self] result in
@@ -70,7 +77,7 @@ final class ListViewModel: ListViewModelProtocol {
                     let results = try decoder.decode(AllResults.self, from: data)
                     
                     guard let fetchedItems = results.result else {
-                        print("Ошибка: не удалось получить данные")
+                        print("Error: Failed to retrieve data")
                         return
                     }
                     
@@ -78,10 +85,10 @@ final class ListViewModel: ListViewModelProtocol {
                     self.filteredItems = fetchedItems
                     self.onUpdate?()
                 } catch {
-                    print("Ошибка при декодировании данных: \(error)")
+                    print("Error decoding data: \(error)")
                 }
             case .failure(let error):
-                print("Ошибка при выполнении сетевого запроса: \(error)")
+                print("Error executing network request: \(error)")
             }
         }
     }
@@ -116,4 +123,3 @@ final class ListViewModel: ListViewModelProtocol {
         onUpdate?()
     }
 }
-

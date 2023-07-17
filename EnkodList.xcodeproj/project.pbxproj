@@ -15,6 +15,7 @@
 		603A5A5B2A618999007956EE /* RequestModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 603A5A5A2A618999007956EE /* RequestModel.swift */; };
 		60CB4E8F2A649B9D00DD88FD /* ListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60CB4E8E2A649B9D00DD88FD /* ListViewModel.swift */; };
 		60CB4E922A64A01700DD88FD /* ListTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60CB4E912A64A01700DD88FD /* ListTableViewCell.swift */; };
+		60CB4E952A6570BD00DD88FD /* UITableView+Extension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60CB4E942A6570BC00DD88FD /* UITableView+Extension.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -28,6 +29,7 @@
 		603A5A5A2A618999007956EE /* RequestModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RequestModel.swift; sourceTree = "<group>"; };
 		60CB4E8E2A649B9D00DD88FD /* ListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListViewModel.swift; sourceTree = "<group>"; };
 		60CB4E912A64A01700DD88FD /* ListTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListTableViewCell.swift; sourceTree = "<group>"; };
+		60CB4E942A6570BC00DD88FD /* UITableView+Extension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UITableView+Extension.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -62,6 +64,7 @@
 			children = (
 				603A5A542A61712F007956EE /* Application */,
 				603A5A552A61713E007956EE /* ContactListModule */,
+				60CB4E932A65709E00DD88FD /* Extensions */,
 				603A5A562A617171007956EE /* Resources */,
 				603A5A592A6179AE007956EE /* Services */,
 			);
@@ -119,6 +122,14 @@
 				60CB4E912A64A01700DD88FD /* ListTableViewCell.swift */,
 			);
 			path = Cell;
+			sourceTree = "<group>";
+		};
+		60CB4E932A65709E00DD88FD /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+				60CB4E942A6570BC00DD88FD /* UITableView+Extension.swift */,
+			);
+			path = Extensions;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -193,6 +204,7 @@
 			files = (
 				60CB4E8F2A649B9D00DD88FD /* ListViewModel.swift in Sources */,
 				603A5A452A61706E007956EE /* ListViewController.swift in Sources */,
+				60CB4E952A6570BD00DD88FD /* UITableView+Extension.swift in Sources */,
 				603A5A582A6179AA007956EE /* NetworkService.swift in Sources */,
 				603A5A412A61706E007956EE /* AppDelegate.swift in Sources */,
 				603A5A5B2A618999007956EE /* RequestModel.swift in Sources */,
