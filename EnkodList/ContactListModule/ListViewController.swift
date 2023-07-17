@@ -37,11 +37,27 @@ final class ListViewController: UIViewController {
         return tableView
     }()
     
+    private lazy var buttonStackView: UIStackView = {
+        let stackView = UIStackView(arrangedSubviews: [previousPageButton, currentPageButton, nextPageButton])
+        stackView.axis = .horizontal
+        stackView.distribution = .equalSpacing
+        stackView.translatesAutoresizingMaskIntoConstraints = false
+        return stackView
+    }()
+    
     private lazy var previousPageButton: UIButton = {
         let button = UIButton(type: .system)
-        button.setTitle("Previous Page", for: .normal)
-        button.translatesAutoresizingMaskIntoConstraints = false
+        button.setImage(UIImage(systemName: "chevron.left"), for: .normal)
         button.addTarget(self, action: #selector(previousPageButtonTapped), for: .touchUpInside)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        return button
+    }()
+
+    private lazy var nextPageButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.setImage(UIImage(systemName: "chevron.right"), for: .normal)
+        button.addTarget(self, action: #selector(nextPageButtonTapped), for: .touchUpInside)
+        button.translatesAutoresizingMaskIntoConstraints = false
         return button
     }()
     
@@ -49,14 +65,6 @@ final class ListViewController: UIViewController {
         let button = UIButton(type: .system)
         button.addTarget(self, action: #selector(currentPageButtonTapped), for: .touchUpInside)
         button.translatesAutoresizingMaskIntoConstraints = false
-        return button
-    }()
-    
-    private lazy var nextPageButton: UIButton = {
-        let button = UIButton(type: .system)
-        button.setTitle("Next Page", for: .normal)
-        button.translatesAutoresizingMaskIntoConstraints = false
-        button.addTarget(self, action: #selector(nextPageButtonTapped), for: .touchUpInside)
         return button
     }()
     
@@ -85,36 +93,27 @@ final class ListViewController: UIViewController {
         view.backgroundColor = .systemGray6
         view.addSubview(searchBar)
         view.addSubview(tableView)
-        view.addSubview(previousPageButton)
-        view.addSubview(currentPageButton)
-        view.addSubview(nextPageButton)
+        view.addSubview(buttonStackView)
         updateCurrentPageButtonTitle()
     }
-    
+
     private func setupConstraints() {
         NSLayoutConstraint.activate([
             searchBar.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
             searchBar.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
             searchBar.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            
-            previousPageButton.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 35),
-            previousPageButton.centerYAnchor.constraint(equalTo: currentPageButton.centerYAnchor),
-            
-            currentPageButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            currentPageButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20),
-            currentPageButton.heightAnchor.constraint(equalToConstant: 40),
-            currentPageButton.widthAnchor.constraint(equalToConstant: 80),
-            
-            nextPageButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -35),
-            nextPageButton.centerYAnchor.constraint(equalTo: currentPageButton.centerYAnchor),
-            
+
             tableView.topAnchor.constraint(equalTo: searchBar.bottomAnchor, constant: 10),
             tableView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 20),
             tableView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -20),
-            tableView.bottomAnchor.constraint(equalTo: currentPageButton.topAnchor, constant: -20)
+            tableView.bottomAnchor.constraint(equalTo: buttonStackView.topAnchor, constant: -20),
+
+            buttonStackView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 20),
+            buttonStackView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -20),
+            buttonStackView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20)
         ])
     }
-    
+
     // MARK: - ViewModel Binding
     
     private func bindViewModel() {
