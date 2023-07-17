@@ -126,7 +126,7 @@ final class ListViewController: UIViewController {
         if currentPage < viewModel.pages.count - 1 {
             currentPage += 1
             updateCurrentPageButtonTitle()
-            updateTableView()
+            self.updateTableView()
         }
     }
     
@@ -143,9 +143,9 @@ final class ListViewController: UIViewController {
             if let textField = alertController.textFields?.first, let text = textField.text, let newPage = Int(text), newPage > 0, newPage <= self.viewModel.pages.count {
                 self.currentPage = newPage - 1
                 self.updateCurrentPageButtonTitle()
-                updateTableView()
+                self.updateTableView()
             } else {
-                showInvalidPageAlert()
+                self.showInvalidPageAlert()
             }
         }
         
@@ -208,14 +208,14 @@ extension ListViewController: UITableViewDelegate {
             if currentPage > 0 {
                 currentPage -= 1
                 updateCurrentPageButtonTitle()
-                updateTableView()
+                self.updateTableView()
             }
         } else if scrollOffset > lastContentOffset && scrollOffset > contentHeight - scrollViewHeight + 10 {
             // Scrolled down
             if currentPage < viewModel.pages.count - 1 {
                 currentPage += 1
                 updateCurrentPageButtonTitle()
-                updateTableView()
+                self.updateTableView()
             }
         }
         
