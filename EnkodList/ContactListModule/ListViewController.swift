@@ -11,8 +11,10 @@ final class ListViewController: UIViewController {
     
     // MARK: - Private properties
     
-    private var currentPage: Int = 1
+    private var currentPage: Int = 0
+    private var maxPages: Int = 0
     private var viewModel: ListViewModelProtocol
+    private var lastContentOffset: CGFloat = 0
     
     // MARK: - UI components
     
@@ -43,12 +45,11 @@ final class ListViewController: UIViewController {
         return button
     }()
     
-    private lazy var currentPageLabel: UILabel = {
-        let label = UILabel()
-        label.text = "\(currentPage) page"
-        label.isUserInteractionEnabled = true
-        label.translatesAutoresizingMaskIntoConstraints = false
-        return label
+    private lazy var currentPageButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.addTarget(self, action: #selector(currentPageButtonTapped), for: .touchUpInside)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        return button
     }()
     
     private lazy var nextPageButton: UIButton = {
@@ -73,7 +74,6 @@ final class ListViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupView()
-        setupPageLabelGesture()
         setupConstraints()
         bindViewModel()
         viewModel.fetchData()
@@ -86,8 +86,9 @@ final class ListViewController: UIViewController {
         view.addSubview(searchBar)
         view.addSubview(tableView)
         view.addSubview(previousPageButton)
-        view.addSubview(currentPageLabel)
+        view.addSubview(currentPageButton)
         view.addSubview(nextPageButton)
+        updateCurrentPageButtonTitle()
     }
     
     private func setupConstraints() {
@@ -97,32 +98,33 @@ final class ListViewController: UIViewController {
             searchBar.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
             
             previousPageButton.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 35),
-            previousPageButton.centerYAnchor.constraint(equalTo: currentPageLabel.centerYAnchor),
+            previousPageButton.centerYAnchor.constraint(equalTo: currentPageButton.centerYAnchor),
             
-            currentPageLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            currentPageLabel.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20),
+            currentPageButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            currentPageButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20),
+            currentPageButton.heightAnchor.constraint(equalToConstant: 40),
+            currentPageButton.widthAnchor.constraint(equalToConstant: 80),
             
             nextPageButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -35),
-            nextPageButton.centerYAnchor.constraint(equalTo: currentPageLabel.centerYAnchor),
+            nextPageButton.centerYAnchor.constraint(equalTo: currentPageButton.centerYAnchor),
             
             tableView.topAnchor.constraint(equalTo: searchBar.bottomAnchor, constant: 10),
             tableView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 20),
             tableView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -20),
-            tableView.bottomAnchor.constraint(equalTo: currentPageLabel.topAnchor, constant: -20)
+            tableView.bottomAnchor.constraint(equalTo: currentPageButton.topAnchor, constant: -20)
         ])
-    }
-    
-    private func setupPageLabelGesture() {
-        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(pageLabelTapped))
-        currentPageLabel.addGestureRecognizer(tapGesture)
     }
     
     // MARK: - ViewModel Binding
     
     private func bindViewModel() {
         viewModel.onUpdate = { [weak self] in
+            guard let self = self else { return }
+            
             DispatchQueue.main.async {
-                self?.tableView.reloadData()
+                self.updateMaxPages()
+                self.updateCurrentPageButtonTitle()
+                self.tableView.reloadData()
             }
         }
     }
@@ -130,20 +132,22 @@ final class ListViewController: UIViewController {
     // MARK: - Actions
     
     @objc private func previousPageButtonTapped() {
-        if currentPage > 1 {
+        if currentPage > 0 {
             currentPage -= 1
-            currentPageLabel.text = "\(currentPage) page"
-            // Обновление таблицы с новыми данными для предыдущей страницы
+            updateCurrentPageButtonTitle()
+            tableView.reloadData()
         }
     }
     
     @objc private func nextPageButtonTapped() {
-        currentPage += 1
-        currentPageLabel.text = "\(currentPage) page"
-        // Обновление таблицы с новыми данными для следующей страницы
+        if currentPage < viewModel.pages.count - 1 {
+            currentPage += 1
+            updateCurrentPageButtonTitle()
+            tableView.reloadData()
+        }
     }
     
-    @objc private func pageLabelTapped() {
+    @objc private func currentPageButtonTapped() {
         let alertController = UIAlertController(title: "Go to page:", message: nil, preferredStyle: .alert)
         alertController.addTextField { textField in
             textField.placeholder = "Enter the number"
@@ -151,18 +155,19 @@ final class ListViewController: UIViewController {
         }
         
         let confirmAction = UIAlertAction(title: "OK", style: .default) { [weak self] _ in
-            if let textField = alertController.textFields?.first, let text = textField.text, let newPage = Int(text), newPage > 0 {
-                self?.currentPage = newPage
-                self?.currentPageLabel.text = "\(newPage) page"
-                // Обновление таблицы с новыми данными для выбранной страницы
+            guard let self = self else { return }
+            
+            if let textField = alertController.textFields?.first, let text = textField.text, let newPage = Int(text), newPage > 0, newPage <= self.viewModel.pages.count {
+                self.currentPage = newPage - 1
+                self.updateCurrentPageButtonTitle()
+                self.tableView.reloadData()
             } else {
                 let errorAlertController = UIAlertController(title: "Error", message: "Invalid page value", preferredStyle: .alert)
                 let okAction = UIAlertAction(title: "OK", style: .default, handler: nil)
                 errorAlertController.addAction(okAction)
-                self?.present(errorAlertController, animated: true, completion: nil)
+                self.present(errorAlertController, animated: true, completion: nil)
             }
         }
-        
         
         let cancelAction = UIAlertAction(title: "Cancel", style: .cancel, handler: nil)
         
@@ -171,40 +176,81 @@ final class ListViewController: UIViewController {
         
         present(alertController, animated: true, completion: nil)
     }
+    // MARK: - Helper Methods
+    
+    private func updateMaxPages() {
+        maxPages = viewModel.pages.count
+    }
+
+    private func updateCurrentPageButtonTitle() {
+        let title = "\(currentPage + 1)/\(maxPages) page"
+        currentPageButton.setTitle(title, for: .normal)
+    }
 }
 
 // MARK: - Extensions
 
 extension ListViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return viewModel.numberOfItems
+        guard currentPage >= 0, currentPage < viewModel.pages.count else {
+            return 0
+        }
+        return viewModel.pages[currentPage].count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         guard let cell = tableView.dequeueReusableCell(withIdentifier: "ListTableViewCell", for: indexPath) as? ListTableViewCell else {
             return UITableViewCell() }
         
-        if let item = viewModel.item(at: indexPath.row) {
+        if let item = viewModel.item(at: indexPath.row, in: currentPage) {
             cell.configure(with: item)
         }
+        
         return cell
     }
 }
 
 extension ListViewController: UITableViewDelegate {
-    
+    func scrollViewWillEndDragging(_ scrollView: UIScrollView, withVelocity velocity: CGPoint, targetContentOffset: UnsafeMutablePointer<CGPoint>) {
+        let scrollOffset = scrollView.contentOffset.y
+        let contentHeight = scrollView.contentSize.height
+        let scrollViewHeight = scrollView.frame.size.height
+        
+        if scrollOffset < lastContentOffset && scrollOffset < -10 {
+            // Scrolled up
+            if currentPage > 0 {
+                currentPage -= 1
+                updateCurrentPageButtonTitle()
+                tableView.reloadData()
+            }
+        } else if scrollOffset > lastContentOffset && scrollOffset > contentHeight - scrollViewHeight + 10 {
+            // Scrolled down
+            if currentPage < viewModel.pages.count - 1 {
+                currentPage += 1
+                updateCurrentPageButtonTitle()
+                let indexPath = IndexPath(row: 0, section: 0)
+                tableView.scrollToRow(at: indexPath, at: .top, animated: true)
+                tableView.reloadData()
+            }
+        }
+        lastContentOffset = scrollOffset
+    }
 }
 
 extension ListViewController: UISearchBarDelegate {
     func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
         guard let searchText = searchBar.text?.lowercased() else { return }
         viewModel.filterItems(with: searchText)
+        currentPage = 0
+        currentPageButton.setTitle("\(currentPage + 1) page", for: .normal)
+        view.endEditing(true)
     }
     
-    func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
-        searchBar.text = nil
-        viewModel.filterItems(with: "")
-        searchBar.resignFirstResponder() //fix
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        if searchText.isEmpty {
+            viewModel.filterItems(with: "")
+            searchBar.resignFirstResponder()
+            self.view.becomeFirstResponder()
+        }
     }
 }
-
