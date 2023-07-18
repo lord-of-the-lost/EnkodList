@@ -86,6 +86,7 @@ final class ListViewController: UIViewController {
         setupConstraints()
         bindViewModel()
         viewModel.fetchData()
+        hideKeyboardWhenTappedAround()
     }
     
     // MARK: - Setup View
@@ -198,6 +199,11 @@ extension ListViewController: UITableViewDataSource {
 }
 
 extension ListViewController: UITableViewDelegate {
+    
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        tableView.deselectRow(at: indexPath, animated: true)
+    }
+    
     func scrollViewWillEndDragging(_ scrollView: UIScrollView, withVelocity velocity: CGPoint, targetContentOffset: UnsafeMutablePointer<CGPoint>) {
         let scrollOffset = scrollView.contentOffset.y
         let contentHeight = scrollView.contentSize.height
